@@ -1,17 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { useRequests } from '../hooks/useRequests';
 import { useEquipment } from '../hooks/useEquipment';
-import { useTechnicians } from '../hooks/useTechnicians'; // Switched from useTeam
+import { useTechnicians } from '../hooks/useTechnicians';
 import RequestFormModal from '../components/RequestFormModal';
 import ResolveModal from '../components/ResolveModal';
 import { Plus, AlertCircle, CheckCircle, Clock, PlayCircle, Calendar, Layout, Trash2, List, Filter } from 'lucide-react';
 import clsx from 'clsx';
 import { useSearchParams } from 'react-router-dom';
+import { useUserManagement } from '../hooks/useUserManagement';
 
 const Requests = () => {
     const { requests, addRequest, updateRequestStage, updateRequest, isOverdue } = useRequests();
     const { equipment, updateEquipment } = useEquipment();
     const { technicians, teams } = useTechnicians();
+    const { hasPermission } = useUserManagement();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [resolveModalOpen, setResolveModalOpen] = useState(false);
     const [resolvingRequestId, setResolvingRequestId] = useState(null);
@@ -68,8 +70,6 @@ const Requests = () => {
     const handleDrop = (e, stage) => {
         e.preventDefault();
         const requestId = e.dataTransfer.getData('requestId');
-
-        // Logic for transition
         transitionStage(requestId, stage);
     };
 
@@ -80,7 +80,6 @@ const Requests = () => {
         } else if (stage === 'Scrap') {
             if (window.confirm("Moving this to Scrap will flag the equipment as unusable. Continue?")) {
                 updateRequestStage(requestId, stage);
-                // Scrap logic: Isolate equipment
                 const req = requests.find(r => r.id === requestId);
                 if (req) {
                     updateEquipment(req.equipmentId, { isScrapped: true, status: 'Down' });
@@ -149,13 +148,15 @@ const Requests = () => {
                         <Filter size={14} className="absolute left-2.5 top-3 text-gray-500" />
                     </div>
 
-                    <button
-                        onClick={handleCreate}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                        <Plus size={18} className="mr-2" />
-                        New Request
-                    </button>
+                    {hasPermission('requests', 'write') && (
+                        <button
+                            onClick={handleCreate}
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                            <Plus size={18} className="mr-2" />
+                            New Request
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -325,14 +326,10 @@ const Requests = () => {
 
                     {/* Calendar Grid Body */}
                     <div className="grid grid-cols-7 gap-px bg-gray-200 border-x border-b border-gray-200 rounded-b-lg flex-1">
-                        {/* Generating a simple current month view (assuming current month for demo) */}
                         {Array.from({ length: 35 }).map((_, i) => {
-                            // Mock logic to align days (just for visual structure in this demo)
-                            // ideally we'd calculate real dates based on current month
-                            const dayNum = i - 2; // Offset to start mid-week for demo
+                            const dayNum = i - 2;
                             const isValidDay = dayNum > 0 && dayNum <= 31;
 
-                            // Find requests for this "day" (mocking date matching for demo: if day matches date of month)
                             const dailyRequests = isValidDay ? filteredRequests.filter(r => {
                                 const d = r.scheduledDate ? new Date(r.scheduledDate) : new Date(r.createdAt);
                                 return d.getDate() === dayNum;
@@ -389,5 +386,3 @@ const Requests = () => {
 };
 
 export default Requests;
-
-

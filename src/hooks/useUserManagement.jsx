@@ -38,7 +38,11 @@ export const UserManagementProvider = ({ children }) => {
             let profile = users.find(u => u.userId === user.id);
             if (!profile) {
                 // Determine role based on email or default to Technician for new signups
-                const role = user.primaryEmailAddress?.emailAddress?.includes('admin') ? 'Admin' : 'Technician';
+                // Explicitly check for the provided admin email
+                const email = user.primaryEmailAddress?.emailAddress;
+                const isAdmin = email === 'gamingdworld7@gmail.com' || email?.includes('admin');
+
+                const role = isAdmin ? 'Admin' : 'Technician';
                 const initialPermissions = role === 'Admin'
                     ? { equipment: 'write', requests: 'write', users: 'write' }
                     : { equipment: 'read', requests: 'write', users: 'read' }; // Technicians can write requests (updates)
@@ -59,6 +63,39 @@ export const UserManagementProvider = ({ children }) => {
         setUsers(prev => prev.map(u => u.userId === userId ? { ...u, ...updates } : u));
     };
 
+    const updateUserRole = (userId, newRole) => {
+        const defaultPermissions = newRole === 'Admin'
+            ? { equipment: 'write', requests: 'write', users: 'write' }
+            : { equipment: 'read', requests: 'write', users: 'read' };
+
+        setUsers(prev => prev.map(u => u.userId === userId ? {
+            ...u,
+            role: newRole,
+            permissions: defaultPermissions
+        } : u));
+    };
+
+    const provisionUser = (email, name, role) => {
+        // Check if user already exists (by email simulation in this mock)
+        // In this mock, userId is unique, so we'll simulate a userId from email
+        const newUserId = email; // Simplified for this mock
+
+        if (users.some(u => u.userId === newUserId)) return; // Already exists
+
+        const defaultPermissions = role === 'Admin'
+            ? { equipment: 'write', requests: 'write', users: 'write' }
+            : { equipment: 'read', requests: 'write', users: 'read' };
+
+        const newUser = {
+            userId: newUserId,
+            role: role,
+            details: { address: '', phone: '' }, // Empty details to be filled by user
+            permissions: defaultPermissions
+        };
+
+        setUsers(prev => [...prev, newUser]);
+    };
+
     const hasPermission = (resource, action) => {
         if (!currentUserProfile) return false;
         if (currentUserProfile.role === 'Admin') return true; // Admins override
@@ -69,7 +106,7 @@ export const UserManagementProvider = ({ children }) => {
     };
 
     return (
-        <UserManagementContext.Provider value={{ users, currentUserProfile, updateUser, hasPermission }}>
+        <UserManagementContext.Provider value={{ users, currentUserProfile, updateUser, updateUserRole, provisionUser, hasPermission }}>
             {children}
         </UserManagementContext.Provider>
     );

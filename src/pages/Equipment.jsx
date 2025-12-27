@@ -5,10 +5,12 @@ import EquipmentFormModal from '../components/EquipmentFormModal';
 import { Plus, Edit2, Trash2, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { useUserManagement } from '../hooks/useUserManagement';
 
 const Equipment = () => {
     const { equipment, addEquipment, updateEquipment, deleteEquipment } = useEquipment();
     const { requests } = useRequests();
+    const { hasPermission } = useUserManagement();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const navigate = useNavigate();
@@ -52,13 +54,15 @@ const Equipment = () => {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Equipment</h1>
-                <button
-                    onClick={handleCreate}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    <Plus size={18} className="mr-2" />
-                    Add Equipment
-                </button>
+                {hasPermission('equipment', 'write') && (
+                    <button
+                        onClick={handleCreate}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                        <Plus size={18} className="mr-2" />
+                        Add Equipment
+                    </button>
+                )}
             </div>
 
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -105,12 +109,16 @@ const Equipment = () => {
                                     </button>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-900 mr-4">
-                                        <Edit2 size={18} />
-                                    </button>
-                                    <button onClick={() => deleteEquipment(item.id)} className="text-red-600 hover:text-red-900">
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {hasPermission('equipment', 'write') && (
+                                        <>
+                                            <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-900 mr-4">
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button onClick={() => deleteEquipment(item.id)} className="text-red-600 hover:text-red-900">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </>
+                                    )}
                                 </td>
                             </tr>
                         ))}

@@ -2,17 +2,25 @@ import React, { useState } from 'react';
 import { useTechnicians } from '../hooks/useTechnicians';
 import { Plus, Trash2, User } from 'lucide-react';
 import clsx from 'clsx';
+import { useUserManagement } from '../hooks/useUserManagement';
 
 const Technicians = () => {
     const { technicians, teams, addTechnician, deleteTechnician } = useTechnicians();
+    const { hasPermission, provisionUser } = useUserManagement();
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [formData, setFormData] = useState({ name: '', role: 'Technician', teamId: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', role: 'Technician', teamId: '' });
 
     const handleSubmit = (e) => {
         e.preventDefault();
         addTechnician(formData);
+
+        // Auto-provision user in Admin Dashboard
+        if (formData.email) {
+            provisionUser(formData.email, formData.name, 'Technician');
+        }
+
         setIsFormOpen(false);
-        setFormData({ name: '', role: 'Technician', teamId: '' });
+        setFormData({ name: '', email: '', role: 'Technician', teamId: '' });
     };
 
     const getTeamName = (id) => teams.find(t => t.id === id)?.name || 'Unassigned';
@@ -21,13 +29,15 @@ const Technicians = () => {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Technicians</h1>
-                <button
-                    onClick={() => setIsFormOpen(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    <Plus size={18} className="mr-2" />
-                    Add Technician
-                </button>
+                {hasPermission('users', 'write') && (
+                    <button
+                        onClick={() => setIsFormOpen(true)}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                        <Plus size={18} className="mr-2" />
+                        Add Technician
+                    </button>
+                )}
             </div>
 
             {isFormOpen && (
@@ -42,6 +52,16 @@ const Technicians = () => {
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Email (for Login Access)</label>
+                                <input
+                                    type="email"
+                                    required
+                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                                 />
                             </div>
                             <div>
@@ -91,9 +111,11 @@ const Technicians = () => {
                                 <p className="text-sm text-gray-500">{tech.role} • {getTeamName(tech.teamId)}</p>
                             </div>
                         </div>
-                        <button onClick={() => deleteTechnician(tech.id)} className="text-red-500 hover:text-red-700 p-2">
-                            <Trash2 size={18} />
-                        </button>
+                        {hasPermission('users', 'write') && (
+                            <button onClick={() => deleteTechnician(tech.id)} className="text-red-500 hover:text-red-700 p-2">
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
